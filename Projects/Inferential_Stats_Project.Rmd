@@ -1,0 +1,482 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+```{r}
+setwd("C:/Users/Sonal Somani/Desktop/IIMInternship/R_code")
+```
+
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+```{r load-data}
+load("gss.Rdata")
+dim(gss)
+```
+
+* * *
+
+## Part 1: Data
+
+Collected on an annual basis from 1972, the observations in the GSS sample are collected by means of face-to-face with an in-person interview by NORC. The median length of the interview has been about one and a half hours. Each survey from 1972 to 2004 was an independently drawn sample of English-speaking persons 18 years of age or over, living in non-institutional arrangements within the United States. Starting in 2006 Spanish-speakers were added to the target population. 
+
+As of 2014, 30 national samples with 59,599 respondents and 5,900+ variables have been collected.
+
+#Suvery Method
+
+To get a random sample, block quota sampling, modified probability sampling, full probability sample etc were used; these techniques had been continually updated over the years. The data covers all key geographies in the United States, and the sample size is randomized such that it is representative of the U.S. population. 
+
+This makes this survey an observational study as the data is collected data in a way that does not directly interfere with how the data arise as the interviewers are merely observing the data that arises.
+
+###Bias
+
+Sin ce this survey is strictly voluntary, it can result in a non-response bias. Also, sometimes people are not-at-home, especially employed young men and women, resulting in non-availability of respondents etc.
+
+###Generalizability
+
+Results from this survey are generalizable to the US population 18 years or older in age because of the following reasons:
+
+1. Since the data is collected from randomly sampled adults in a household and random sampling suggests that this data is generalizable.
+
+2. The GSS sample is drawn using an area probability design that randomly selects respondents in households across the United States to take part in the survey. Respondents that become part of the GSS sample are from a mix of urban, suburban, and rural geographic areas which in turn makes the data further more representative of the population at large.
+
+3. Also, weighting techniques are employed to counter for the non-response bias.
+
+###Causality
+
+Since this survey is an observational study and not an experiment,and also since no random assigment was done while carrying out this survey, we can conclude that this data can only allow us to find association between the variables and not causal relationships. 
+
+Thus, no causal relationships between variables can be established on the basis of this survey data.
+
+* * *
+
+## Part 2: Research question
+
+**Research Question 1**
+
+Here, we are evaluating if there is an association between abortions and level of religious inclination of people. 
+
+Variables - 
+abany: Abortion if woman wants for any reason
+attend: How often R attends religious services 
+
+This question can be of interest if we find that strong religious befiefs are strongly associated with less rate of going for abortions than those who aren't religiously inclined.
+Since abortions are sometimes becomes necessarydue to reasons like financial unaffordability or failing health of the mother, proper awareness should be developed about it amongst strongly religious groups of people.
+
+**Research Question 2**
+
+Here, we determine if the data provide strong evidence of there being differences in the opinion between college graduates & non-college grads towards national spending on halting the rising crime rate in the year 2012.
+
+Variables -
+natcrime: Halting rising crime rate
+degree: Respondent's highest degree
+
+This can be interesting to find for if having a college degree changes opinions about national spending on halting crime rates? Or rather more generally does having a college degree makes you more skeptical or accepting about national & international matters of your country than our non-college graduates counterpart?
+
+**Research Question 3**
+
+Here, we determine if the data provide strong evidence of there being a difference in having hardly any confidence in Congress between the years 1991 and 2012.
+
+Variables - 
+conlegis: confidence in Congress
+
+As U.S. Congress gets elected to represent the nation's interests and this confidence difference among citizens over a period of time would tell of the changes in accountability of Congress in the eyes of its citizens.
+
+If we replicate this exercise for couple other time periods, and then filter the periods where the confidence levels have been higher than before, we can find interesting observations about the sense of confidence in Congress which also could be brought to the notice of the US Congress for increasing their learning from these past times.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+**Research Question 1**
+
+```{r}
+
+summary(gss$abany)
+summary(gss$attend)
+#Let's exclude the Na's from this analysis
+
+gss_NA <- gss %>% filter(!is.na(gss$abany))
+gss_NA <- gss_NA %>% filter(!is.na(gss_NA$attend))
+
+#After filtering the NA's
+
+prop.table(table(gss_NA$abany))
+prop.table(table(gss_NA$attend))
+
+```
+
+We see that around 37% of women had gone for abortions while 63 percent hadn't. Also, that around 24% attend religious instituions every week while there was a large percentage around 16% for people who attended religious institutions just once a year.
+
+```{r}
+
+#Let's make a two way contingency table for abortions and frequency of visiting religious institutions 
+
+my_table = prop.table(table(gss_NA$abany,gss_NA$attend),margin=1)
+addmargins(my_table,2)
+
+```
+
+Here, we can clearly see that there are 28% women who didn't go for abortions are those who visited religious institutions every week suggesting a strong association between religious beliefs and going for abortions.
+
+```{r}
+#Let's plot this information as a barplot
+
+labs <- c("Never",  "Lt 1x a yr", "1x a yr","Sevrl times yr","1x month","2-3x month","~ every wk","Every wk","> 1x a wk")
+
+barplot(my_table,main="Abortions vs Visting freq of religious institutions",ylab="Proportion",col=c("lightblue","red"), legend = rownames(my_table),cex.main=0.8,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:9, labels=labs[0:9],cex.axis=0.5)
+
+```
+
+Thus, it is evident from the data that people who visit religious institutions once a week or more than once a week are less likely to go for abortions.
+
+Now, with the help of chi sq test of independence, we will determine if the variables abany and attend are independent or not.
+
+**Research Question 2**
+
+```{r}
+summary(gss$natcrime)
+summary(gss$degree)
+#Let's exclude the Na's from this analysis and filter for year 2012
+
+gss1_NA <- gss %>% filter(!is.na(gss$natcrime))
+gss1_NA <- gss1_NA %>% filter(!is.na(gss1_NA$degree))
+
+#Filtering for year 2012 
+gss1_NA <- gss1_NA %>% filter(gss1_NA$year == 2012) 
+
+#After filtering the NA's
+
+prop.table(table(gss1_NA$natcrime))
+prop.table(table(gss1_NA$degree))
+
+```
+
+We see that around 60% of people belief national spending on halting rising crime has been too little while about 33% belief it is just right and just 7% people belief that is too much. 
+
+Also, only around 10% people are graduates while rest are non-college graduates.
+
+
+```{r}
+#Let's make another column called Grad where we would write : 
+# 1 for graduate and 0 for non-college graduate
+
+gss1_NA <- gss1_NA %>%
+  mutate(grad = ifelse(degree == "Graduate", 1, 0))
+
+prop.table(table(gss1_NA$grad))
+
+#Let's make a two way contingency table for grad and belief on national spending for halting rising crime
+
+my_table1 = prop.table(table(gss1_NA$grad,gss1_NA$natcrime),margin=1)
+addmargins(my_table1,2)
+
+# Let's make a bar plot for this
+
+labs1 <- c("Too little",  "About Right", "Too much")
+
+barplot(my_table1,main="Grads and Non- grads on national spending for halting rising crimes",ylab="Proportion",col=c("lightblue","red"), legend = rownames(my_table1),cex.main=0.8,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:3, labels=labs1[0:3])
+
+```
+
+Here, we find that there is a difference of about 14% between college grads and non-college grads who think that national spending on halting rising crime is "too little" while the difference is 16% for the response "about right".
+
+Now, with the help of chi sq test of independence, we will determine if there is any association between these different opinions based on whether it is coming from a grad or non-grad.
+
+**Research Question 3**
+
+```{r}
+
+summary(gss$conlegis)
+
+#Let's exclude the Na's from this analysis and filter for year 2012
+
+gss2_NA <- gss %>% filter(!is.na(gss$conlegis))
+
+#Filtering for year 2012 & 1991
+gss2_filtered<- subset(gss2_NA , year == 2012 | year==1991)
+dim(gss2_filtered)
+
+#Contingency table
+
+my_table3 = prop.table(table(gss2_filtered$year,gss2_filtered$conlegis),margin=1)
+addmargins(my_table3,2)
+
+hardly_any <- my_table3[,3]
+
+hardly_any
+
+# Let's make a bar plot for this
+
+barplot(hardly_any,main="Confidence in Congress in years 1991 and 2012",ylab="Proportion",xlab="Hardly Any",col=c("lightblue","pink"), legend = rownames(my_table3),cex.main=0.8,cex.axis=0.7)
+
+#Filtering for 1991 and 2012 seperately
+#gss2_2012<- subset(gss2_NA , year == 2012)
+#gss2_2012<- subset(gss2_NA , year == 1991)
+
+```
+
+As is seen by the plot, we see that the proportion of people who have hardly any confidence in Congress have increased from 26% in 1991 to around 50% by 2012. 
+
+Let's test if this difference in proportions is just due to sampling variation or if this difference is statistically significant using tools like hypothesis testing and CI calculation. 
+
+* * *
+
+## Part 4: Inference
+
+#Research Question 1
+
+**State Hypothesis**
+H0: There is no association between abortion and frequency of attending religious institutions.
+HA: There is some association between abortion and frequency of attending religious institutions.
+
+**Check conditions**
+
+Conditions for the chi-square test :
+
+*1. Independence*
+Since each case that contributes a count to the table comes from a random sample of people every year and one only response is registered for one person, we can say that each case is independent of all the other cases in the table.
+
+Also, if sampling without replacement, < 10% of the population: the sample for any year comprises a few thousand samples; for 2012 is 957.
+
+```{r}
+gss_2012 <- gss_NA %>% filter(gss_NA$year == "2012")
+dim(gss_2012)
+```
+
+
+*2. Sample size / distribution *
+Each particular scenario (i.e. cell count) must have at least 5 expected cases.
+
+This condition can be easily verified by this table :
+
+```{r}
+#Since the 0's will throw off our calculations, we exclude "Never" from our analysis, as :
+
+gss_NA$attend <- factor(gss_NA$attend)
+
+tbl <- table(gss_NA$abany,gss_NA$attend)
+tbl
+
+```
+
+As we can see, all cells have a value greater than 5 observations, this condition is satisfied.
+
+**State the method(s) to be used and why and how**
+
+The variables involved are categorical with more than 2 levels, therefore the suitable test is a chi-square test of independence that quantifies how different the observed values are from the estimated values.
+
+Our final goal is to assess whether there is statistically significant evidence that the frequency of visting religious institutions affects on getting abortions done or in other words the goal is to check whether the freq. of visting religious places is independent of getting abortions. 
+
+In this test, the explanatory variable is the freq. of attending religious institutions and outcome variable is getting abortions done.
+
+**For Hypothesis testing**
+
+```{r}
+
+chisq.test(tbl)
+
+```
+
+As we can see here, the p-value is much lesser than the significance level of 0.05, we can reject the null hypothesis. That is, the data provide convincing evidence of there being some association between frequency of visiting religious institutions and doing abortions.
+
+Here, we won't be able to construct an CI as the data doesn't lend itself to do so. Hence, we cannot apply any other method here and thus no comparison can be made.
+
+#Research Question 2
+
+**State Hypothesis**
+H0: There is no association between graduation and opinion towards national spending on halting the rising crime rate.
+HA: There is some association between graduation and opinion towards national spending on halting the rising crime rate.
+
+**Check conditions**
+
+Conditions for the chi-square test :
+
+1. Independence. 
+Since each case that contributes a count to the table comes from a random sample of people and one only response is registered for one person, we can say that each case is independent of all the other cases in the table.
+
+Also, if sampling without replacement, < 10% of the population: the sample for any year comprises a few thousand samples; for 2012 is 957.
+
+```{r}
+dim(gss1_NA)
+```
+
+2. Sample size / distribution. 
+Each particular scenario (i.e. cell count) must have at least 5 expected cases.
+
+This condition can be easily verified by this table :
+
+```{r}
+tbl_1 <- table(gss1_NA$grad,gss1_NA$natcrime)
+tbl_1
+
+```
+
+As we can see, all cells have a value greater than 5 observations, this condition is satisfied.
+
+**State the method(s) to be used and why and how**
+
+The variables involved are categorical with more than 2 levels, therefore the suitable test is a chi-square test of independence that quantifies how different the observed values are from the estimated values.
+
+Our final goal is to assess whether there is statistically significant evidence that having a grdauation degree affects opinion towards national matters like spending over halting rising crime or in other words the goal is to check whether being a graudate is independent of opinion over national spending over halting rising crime. 
+
+In this test, the explanatory variable is the graduation and outcome variable is opinion over national spending over halting rising crime.
+
+**For Hypothesis testing**
+
+```{r}
+
+chisq.test(tbl_1)
+
+```
+
+As we can see here, the p-value is less than the significance level of 0.05, hence we can reject the null hypothesis. That is, the data provide convincing evidence of there being some association between being a graduate and opinion towards national spending on halting the rising crime rate.
+
+Here, we won't be able to construct an CI as the data doesn't lend itself to do so.
+Hence, we cannot apply any other method here and thus no comparison can be made.
+
+#Research Question 3
+
+**State hypotheses**
+
+H0: The proportion of people who hardly believe in Congress was the same for 1991 and 2012. p1 - p2 = 0 
+HA: The proportion of people who hardly believe in Congress in 2012 is different from 1991. p1 - p2 != 0
+
+**Check conditions**
+
+Conditions for the sampling distribution of p^1-p^2 to be normal.
+
+The difference p^1-p^2 tends to follow a normal model when
+. each proportion separately follows a normal model, and
+. the two samples are independent of each other.
+
+**1. Independence Condition for both p1 and p2**
+
+```{r}
+tab <- table(gss2_filtered$year,gss2_filtered$conlegis)
+addmargins(tab)
+
+```
+
+Since the data come from a simple random sample every year from less than 10% of all participants (as can be seen from the table above where for 1991, there are 259 observations and 639 for the year 2012 for Hardly Any response), so the observations are independent.
+
+**Success - failure condition : np>=10 and n(1-p)>=10**
+This should hold true for both the proportions.
+
+For p^1 = 0.264,n=898
+np = 237
+n(1-p) = 660
+
+For p^2 = 0.493, n=898
+np = 442
+n(1-p) = 449
+
+Since both are greater than 10 in eah case, we say that this condition is satisfied as well.
+
+Hence, both p^1 and p^2 follow a normal model.
+
+2. Since each year the people are randomly sampled for the survey, hence we can say that the two samples are independent of each other. 
+
+**Special Condition for conducting hypothesis testing -**
+
+1. Success failure condition using pooled proportion
+
+```{r}
+#Calculating pooled proportion for Hypothesis testing
+
+phat = (898 /  2276)
+phat
+
+```
+This proportion is an estimate of the Hardly any confidence response from people across the entire study (1991 & 2012), and it's our best estimate of the proportions p1 and p2 if the null hypothesis is true that p1 = p2. 
+
+The success failure condition is satisfied using this phat as it can be seen the numbers will be pretty large than 10 in eah case.
+
+**State the method(s) to be used and why and how**
+
+Because each group is a simple random sample from less than 10% of the population, the observations are independent, both within the samples and between the samples. The success-failure condition also holds for each sample. Because all conditions are met, the normal model can be used for the point estimate of the difference in support, where p1 corresponds to the proportion of people having hardly any confidence in 2012 and p2 to proportion of people having hardly any confidence in 1991, we can proceed with performing a hypothesis test as well as we would form a CI for this. We will do all the calculations by hand.
+
+
+**For Confidence Testing**
+Point estimate for p^1 -p^2 = 0.493 - 0.264 = 0.229
+
+```{r}
+p1= 0.4934363
+p2 = 0.2640163
+n1 = 639
+n2 = 259
+pest = (p1-p2)
+pest
+
+#Calculating SE as sqrt(((p1*1-p1)/n1) + ((p2*1-p2)/n2)), we get :
+
+Se = 0.0336
+
+#Calculating confidence Interval using 95% confidence level as: CI = (pest + or - z* X SE )
+#Marging of error would be : MOE = 1.96*Se 
+
+MOE = 0.066
+
+#CI_up = pest + MOE and CI_low = pest - MOE
+CI_low = 0.1634
+CI_up = 0.29542
+
+```
+
+Here, we are 95% confident that the hardly any confidence response towards Congress between 2012 and 1991 differs by 16% to 29%. This large difference in having hardly any confidence suggests that the confidence in public have decreased a lot over the years. 
+
+**For Hypothesis Testing**
+
+```{r}
+# We have the pooled proportion as phat. We calculate the SE with this pooled proportion as Se1 = sqrt(phat(1-phat)/n1 + phat(1-phat)/n2)
+
+Se1 = 0.0114
+
+#Point estimate for difference of proportions between 2012 and 1991
+pest1 = (639/1295) - (259/981)
+pest1
+
+#The hardly any confidence proportion is 0.229% more in 2012 than in 1991.
+
+#Calculating a test statistic
+
+z = ((pest1 - 0)/Se1) 
+z
+
+#Using this z score, we find the area under the normal curve as :
+area <- pnorm(z)
+area
+
+#Finding the target area as 1-area,
+target_area = 2*(1-area)
+target_area
+
+```
+
+Since the z score is extremely large, it suggests that the tail area would be extremely tiny. This suggests that we can reject the null hypothesis as it falls below alpha (0.05), our cut off value.
+
+That is, we have statistically significant evidence that there is a difference in the proportions of hardly any confidence in Congress between the years 2012 and 1991.
+
+**CI and HT results agreability**
+
+Since the CI is (0.1634,0.29542) and this doesn't include the null value 0, we can say that we can reject the null hypothesis.
+
+Here, we see that both the CI and the HT results suggests that we reject the null hypothesis and hence the results agree with each other.
+

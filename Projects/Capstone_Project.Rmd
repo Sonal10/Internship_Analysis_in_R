@@ -1,0 +1,830 @@
+---
+title: "Coursera_Project_Final"
+author: "Sonal Somani"
+date: "July 13, 2017"
+output: html_document
+---
+
+## Setup
+setwd("F:/Users/10824/Desktop/R code")
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+
+```
+
+### Load data
+
+```{r load-data}
+load("Brfss.RData")
+View(brfss2013)
+
+brfss2013 %>% select(lsatisfy)
+```
+
+We observe in the output of the above command that the names have been standardised with the addition of X in front of the variable names.
+
+* * *
+
+## Part 1: Data
+
+The Behavioral Risk Factor Surveillance System (BRFSS) is a collaborative project between all of the states in the United States (US) and participating US territories and the Centers for Disease Control and Prevention (CDC). 
+
+The BRFSS objective is to collect uniform, state-specific data on preventive health practices and risk behaviors that are linked to chronic diseases, injuries, and preventable infectious diseases that affect the adult population.
+
+Health characteristics estimated from the BRFSS pertain to the non-institutionalized adult population, aged 18 years or older, who reside in the US. In 2013, additional question sets were included as optional modules to provide a measure for several childhood health and wellness indicators, including asthma prevalence for people
+aged 17 years or younger.
+
+###Survey Method
+
+The data collected as part of this initiative is by done by conducting telephonic surveys over landline telephone as well as cellular telephone. In case of landline telephone survey, interviewers collected this data from a randomly selected adult in a household while in case of cellular version of the survey, interviewers collect data from an adult who participates by using a cellular telephone and resides in a private residence or college housing.
+
+This makes this survey an observational study as the data is collected data in a way that does not directly interfere with how the data arise as the interviewers are merely observing the data that arises.
+
+###Bias
+
+These telephonic survey methods can result in a non-response bias, this can be verified with the Data Quality Report found here - https://www.cdc.gov/brfss/annual_data/2013/pdf/2013_dqr.pdf
+
+It shows that the response rate varies from state to state ranging from between 29%  to 60%. This can be attributed to various factors like refusal, language barriers, termination within questionnaire etc. For instance, in state Albama, where the response rate is just 30%, it is difficult to say if the results are generalizable to the whole population of Alabama. In the next section, we will justify why the results are generalizable even though there is non-response bias in the data.
+
+###Generalizability
+
+Results from this survey are generalizable to the US population 18 years or older in age because of the following reasons:
+
+1. Since the data is collected from randomly sampled adults in a household and random sampling suggests that this data is generalizable.
+
+2. BRFSS used the weighting methodology called iterative proportional fitting (or
+"raking") to weight the data. Raking adjusts the data so that groups underrepresented in the sample can be more accurately represented in the final data set. BRFSS raking includes categories of age by gender, detailed race and ethnicity groups etc. which in turn makes the data further more representative of the population at large.
+
+###Causality
+
+Since this survey is an observational study and not an experiment,and also since no random assigment was done while carrying out this survey, we can conclude that this data can only allow us to find correlations between the variables and not causal relationships. Thus, no causal relationships between variables can be established on the basis of this survey data.
+
+### Overview of data
+Let's get an overview of the data and their datatypes and a few rows.
+
+```{r}
+str(brfss2013)
+head(brfss2013)
+```
+
+Let's see which years our data is from -
+
+```{r}
+table(brfss2013$iyear)
+
+```
+This table for the column "iyear" shows that data from only the years 2013 and 2014 form our frame of reference.
+
+Let's see the distribution for the number of respondents from each state.
+
+X_state: State FIPS Code
+
+Informaion on which state_code refers to which state is given here - https://www.cdc.gov/brfss/annual_data/2013/pdf/CODEBOOK13_LLCP.pdf
+
+```{r}
+summary(brfss2013$X_state)
+
+my_tab <- prop.table(table(brfss2013$X_state))
+
+labs <- c("Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Columbia","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming","Guam","Puerto Rico")
+
+barplot(my_tab,main="Respondents distribution in the States",ylab="Proportion",col="pink",cex.axis=0.7,xaxt="n",space=0.01)
+axis(side=1, at=2:51, labels=labs[0:50],cex.axis=0.6,las=2)
+
+```
+
+From this distribution we see that mostly the survey sample is from Columbia, Iowa, Montana among a few others.
+
+* * *
+
+## Part 2: Research questions
+
+**Research question 1:**
+Explore the relationship between people who take treatment for mental health and their belief of whether treatment can help people lead a normal life and the number of days they didn't have good mental health. We would be focusing on the question that if people take treatment believing people Mental Health Treatment Can Help People Lead Normal Life, do they have lower bad mental health days?
+
+menthlth - 'Number Of Days Mental Health Not Good',
+mistrhlp: Mental Health Treatment Can Help People Lead Normal Life,
+mistmnt: Receiving Medicine Or Treatment From Health Pro For Emotional Problem
+
+This can be of interest to the audience as to determine how beliefs about treatment can affect 'not good mental health days' number.
+
+
+**Research quesion 2:**
+
+Explore the relationship between Ethnicity, Income Categories and frequency with which people think about their Race.
+
+The focus of this question shall be to determine if income has an affect on the frequency with which racial minorities (non whites) think about their race?
+
+This can be of interest to the audience to know if lower income categories racial minorities think about their race often or is it the other way round with higher income categories thinking more about their racial status?
+
+X_RACEG21: Imputed Race/Ethnicity groups, rrcognt2: How Often Do You Think About Your Race?, X_incomg: Computed Income Categories
+
+
+**Research quesion 3:**
+
+To explore the relationship between how often males and females exercise with the hours males and females work weekly, and their income level.
+
+The focus of this question would be to see if males or females who worked more than the average work hours across various income levels , were they engaging in exercise lesser than the rest?
+
+It would be interesting to explore the effects of income on exercise hours and if that varied with gender.
+
+EXERHMM1: Exercise (Physical Activity), scntwrk1 -'How Many Hours Per Week Do You Work', _INCOMG - 'Computed income categories', sex - gender
+ 
+***
+
+## Part 3: Exploratory data analysis
+
+##Research Q1.
+
+Explore the relationship between people who take treatment for mental health and their belief of whether treatment can help people lead a normal life and the number of days they didn't have good mental health.
+
+Variables used : 
+menthlth - 'Number Of Days Mental Health Not Good',
+mistrhlp: Mental Health Treatment Can Help People Lead Normal Life,
+mistmnt: Receiving Medicine Or Treatment From Health Pro For Emotional Problem
+
+```{r}
+#Let's summarise the variables in question
+
+#Description: Now thinking about your mental health, which includes stress, depression, and problems with emotions, for how many days during the past 30 days was your mental health not good? 
+
+#Let's exclude the Na's from this analysis
+
+brfss2013 <- brfss2013 %>% filter(!is.na(menthlth))
+summary(brfss2013$menthlth) #Numerical
+
+
+```
+
+This summary shows that usually people do not have mental health bad days with the maximum being 30 days (whole month). Let's make a table to see the proportion of people having bad days and the propotion not having.
+
+```{r}
+#menthlth - 'Number Of Days Mental Health Not Good'
+
+my_table <- prop.table(table(brfss2013$menthlth))
+my_table
+
+hist(brfss2013$menthlth,main="Number of not good mental health days",ylab="Count",col="pink")
+
+boxplot(brfss2013$menthlth,main="Number of not good mental health days",ylab="Count",col="pink")
+
+```
+
+Clearly as the histogram shows the distribution is right skewed as around 70% people do not have any bad mental health days.
+
+If we only check people who have had atleast 1 bad mental health days in the past month, we get -
+
+
+```{r}
+
+bad_days <- subset(brfss2013,menthlth>=1)
+
+summary(bad_days$menthlth)
+table(bad_days$menthlth)
+
+hist(bad_days$menthlth,main="Number of not good mental health days",ylab="Count",col="pink")
+
+boxplot(bad_days$menthlth,main="Number of not good mental health days",ylab="Count",col="pink")
+
+```
+
+The distribtion of people who are having atleast 1 bad mental helath day is also right skewed with the median at 5 days in a month and the mean at 10 days. Since, this distribution is right skewed, our mean is grater than the median as the few high observation pull the mean towards the higher end.
+
+```{r}
+#mistrhlp: Mental Health Treatment Can Help People Lead Normal Life
+
+#Prologue: These next questions ask about peoples´ attitudes toward mental illness and its treatment.
+#Description: Treatment can help people with mental illness lead normal lives. Do you agree slightly or strongly, or disagree slightly or strongly? 
+
+#Let's exclude the Na's from this analysis
+
+brfss2013 <- brfss2013 %>% filter(!is.na(mistrhlp))
+summary(brfss2013$mistrhlp) #Categorical and ordinal in nature
+
+my_table2 <- prop.table(table(brfss2013$mistrhlp))
+
+my_table2
+
+barplot(my_table,main="Can treatment help people with mental illness to lead normal lives?",ylab="Proportion",col="pink",cex.main=0.7,cex.axis=0.7)
+
+```
+
+This is a categorical variable with a whopping percentage of around 70% people strongly agreeing with the belief that treatment can help people with mental illness lead normal lives while the percentage of people strongly/slightly disagreeing with this are just around 4%.
+
+```{r}
+#mistmnt: Receiving Medicine Or Treatment From Health Pro For Emotional Problem
+#Description: Are you now taking medicine or receiving treatment from a doctor or other health professional for any type of mental health condition or emotional problem? 
+
+#Let's exclude the Na's from this analysis
+
+brfss2013 <- brfss2013 %>% filter(!is.na(mistmnt))
+summary(brfss2013$mistmnt) #Categorical, nominal in nature
+
+my_table <- prop.table(table(brfss2013$mistmnt))
+
+my_table
+
+barplot(my_table,main="Receiving Treatment From Health Pro For Emotional Problem",ylab="Proportion",col="pink",cex.main=0.7,cex.axis=0.7)
+
+```
+
+The distribution shows that the percentage of people who recieve treatment from health professionals for emotional problems in the sample are around 15%.
+
+Now, since we are interested in knowing that the distribution of bad mental health days of the people who opt for treatment, we would take a subset of the dataset. 
+
+```{r}
+
+treatment <- subset(brfss2013,brfss2013$mistmnt=="Yes")
+summary(treatment$menthlth)
+table(treatment$menthlth)
+
+my_table1 <- prop.table(table(treatment$menthlth))
+my_table1
+
+hist(treatment$menthlth,main="Number of not good mental health days of those getting treated",ylab="Count",col="pink")
+
+```
+
+We see from these distributions that people who are getting treated and having not good mental health days is again a right skewed distribution with : 33% people not having any bad mental health days while a whopping almost 17% having all 30 days as not good mental health days. The mean bad mental health days for those getting treated are almost 10 days in a month while the median is 4 days in a month.
+
+Now, let's visualize how people who are getting treated feel about leading a normal life post their treatments.
+
+```{r}
+
+
+my_table <- prop.table(table(treatment$mistrhlp))
+
+my_table
+
+labs <-c("Agree Strongly","Slightly agree","Neutral","Slightly disagree","Strongly disagree")
+
+par(mfrow=c(1,2))
+barplot(my_table,main="Can treatment help people with mental illness lead normal lives?",ylab="Proportion",col="pink",cex.main=0.55,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:5, labels=labs[0:5],cex.axis=0.5)
+
+barplot(my_table2,main="Belief Of those getting treated on the same",ylab="Proportion",col="pink",cex.main=0.55,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:5, labels=labs[0:5],cex.axis=0.5)
+
+```
+
+Both the distributions look pretty similar for the belief that treatment helps people with mental illness to lead normal lives with over 70% still vouching for strong agreements in the bucket of people who are getting treatments.
+
+Let's now visualize how the distribution of bad mental health days looks like for people getting treatment and believing that treatment helps people will mental illness to lead a normal life vs those who don't belive so.
+
+```{r}
+
+boxplot(menthlth ~ mistrhlp, data=treatment, xlab="Bad Mental Health days in 30 days",cex.axis=0.55)
+
+```
+
+Inference ->
+
+Clearly this plot shows that people who slightly/strongly believe that mental health treatment can help people lead normal life have lower mental health days as compared to people who slightly/strongly disagree in this belief.
+
+Since, this result does not say anything about causation, we cannot make causal conclusions about beliefs and bad mental health days and to ascertain that further research is needed which is beyond the scope of this study as of now.
+
+##Research Q2.
+
+The focus of this question shall be to explore the relationship between the people of racial minorities (non whites) thinking constantly about their racial status and how it differs with income levels.
+
+Variables used :
+X_imprace: Imputed Race/Ethnicity Value
+rrcognt2: How Often Do You Think About Your Race?
+X_INCOMG: calculated income categories
+
+```{r}
+
+#Let's summarise the variables in question
+
+#Description: X_raceg21: White non-Hispanic race group
+#X_imprace: Imputed race/ethnicity value (This value is the reported race/ethnicity or an imputed race/ethnicity, if the respondent refused to give a race/ethnicity. The value of the imputed race/ethnicity will be the most common race/ethnicity response for that region of the state)
+
+#Let's remove the Na's from the analysis
+load("Brfss.RData")
+
+brfss2013 <- brfss2013 %>% filter(!is.na(brfss2013$X_raceg21))
+
+brfss2013 <- brfss2013 %>% filter(!is.na(brfss2013$X_imprace))
+
+dim(brfss2013)
+summary(brfss2013$X_raceg21)
+summary(brfss2013$X_imprace)
+
+```
+
+```{r}
+
+my_table <- prop.table(table(brfss2013$X_imprace))
+
+my_table
+
+labs <- c("White,NH","Black,NH","Asian,NH","American Indian/Alaskan NH","Hispanic","Other,NH")
+
+barplot(my_table,main="Racial Distribution in USA",ylab="Proportion",col="pink",xaxt="n")
+axis(side=1, at=1:6,labels=labs[0:6],cex.axis=0.5)
+
+my_table4 <- prop.table(table(brfss2013$X_raceg21))
+my_table4
+
+barplot(my_table4,main="Racial Distribution in USA (White vs Non-white/Hispanic)",ylab="Proportion",col="pink")
+
+```
+
+This distribution shows that over 75% of the sample are non-hispanic whites.
+
+```{r}
+#rrcognt2: How Often Do You Think About Your Race?
+#Description: How often do you think about your race? Would you say never, once a year, once a month, once a week, once a day, once an hour, or constantly? 
+
+summary(brfss2013$rrcognt2)
+
+#Here, all responses which refused,not asked/missing,or who weren't sure are classified under NA which we would be removing from our analysis.
+
+race_without_NA <- brfss2013 %>% filter(!is.na(rrcognt2)) 
+dim(race_without_NA)
+my_table <- prop.table(table(race_without_NA$rrcognt2))
+my_table
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_table,main="How often people think about race?",ylab="Proportion",col="orange",cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+This distribution tells that over 60% people never think about their race while 11% people think about it once an year but there are people who think about race on a daily/hourly basis which amounts to almost 8%.
+
+Let's visualize the people falling under different income levels of the country.
+
+Variable : _incomg: Computed Income Categories
+Description: Income categories
+
+```{r}
+
+#Let's exclude the Na's from the analysis:
+
+income_without_NA <- brfss2013 %>% filter(!is.na(X_incomg)) 
+summary(income_without_NA$X_incomg)
+
+income <- prop.table(table(income_without_NA$X_incomg))
+income
+
+income_cat <- c("Less than $15000"," $15000-$25000","$25000-$35000","$35000-$50000","$50000 or more")
+
+barplot(income,main="Income Categories",ylab="Proportion",col="pink",cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:5, labels=income_cat[0:5],cex.axis=0.7,las=2)
+
+```
+
+Here, we see than more than 40% persons are in the highest income category level of more than 50 thousand dollars.
+
+Now, let's explore the relationship between racial status and who thinks how much about their race.
+
+```{r}
+
+my_tab <- prop.table(table(race_without_NA$X_imprace,race_without_NA$rrcognt2))
+my_tab
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab,main="Racial Status vs Freq of thinking about race",ylab="Proportion",col=c("lightblue","red","green","darkblue","yellow","orange"),
+ 	legend = rownames(my_tab),cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+From this distribution, it looks like among the other races, hispanics think constantly about their race a lot more than others. This may also be because we have a lot more hispanics in the country than other races.
+
+So, let's focus of plotting the distribution between each race and how often they think about their race in separate charts to make the relationship clearer.
+
+```{r}
+
+summary(race_without_NA$X_imprace)
+
+data_whites <- subset(race_without_NA,X_imprace == "White, Non-Hispanic")
+
+my_tab <- prop.table(table(data_whites$rrcognt2))
+my_tab
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab,main="White, Non-Hispanic vs Freq of thinking about race",ylab="Proportion",xlab="White,Non-Hispanic",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+```{r}
+
+data_blacks <- subset(race_without_NA,X_imprace == "Black, Non-Hispanic")
+
+my_tab1 <- prop.table(table(data_blacks$rrcognt2))
+my_tab1
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab1,main="Black, Non-Hispanic vs Freq of thinking about race",ylab="Proportion",xlab="Black, Non-Hispanic",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+
+```
+
+```{r}
+
+data_asian <- subset(race_without_NA,X_imprace == "Asian, Non-Hispanic")
+
+my_tab2 <- prop.table(table(data_asian$rrcognt2))
+my_tab2
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab2,main="Asian, Non-Hispanic vs Freq of thinking about race",ylab="Proportion",xlab="Asain,Non-Hispanic",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+```{r}
+
+data_alaska_indie <- subset(race_without_NA,X_imprace == "American Indian/Alaskan Native, Non-Hispanic")
+
+my_tab3 <- prop.table(table(data_alaska_indie$rrcognt2))
+my_tab3
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab3,main="American Indian/Alaskan Native, Non-Hispanic vs Freq of thinking about race",ylab="Proportion",xlab="American Indian/Alaskan Native, Non-Hispanic",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+ 	cex.main=0.6,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+```{r}
+
+hispanic <- subset(race_without_NA,X_imprace == "Hispanic")
+
+my_tab4 <- prop.table(table(hispanic$rrcognt2))
+my_tab4
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab4,main="Hispanic vs Freq of thinking about race",ylab="Proportion",xlab="Hispanic",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+ 	cex.main=0.6,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+```{r}
+
+other <- subset(race_without_NA,X_imprace == "Other race, Non-Hispanic")
+
+my_tab5 <- prop.table(table(other$rrcognt2))
+my_tab5
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_tab5,main="Other race,Non- Hispanic vs Freq of thinking about race",ylab="Proportion",xlab="Other race, Non-Hispanic",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+ 	cex.main=0.6,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+From the above distributions, it become quite clear that only about 1 % of whites think about their race constantly while more than 15% of blacks, 11% of asians, 17% hispanics, 22% american indians/alaskan natives, 7% of other races think about their race constantly.
+
+Clearly, based on racial status, the variation in thinking about race constantly differs with American Indians/Alaskan Natives thinking constantly a lot more than other races.
+
+Now, lets focus on our final part of the question, i.e. how thinking about racial status varies with different income levels.
+
+```{r}
+
+my_tab_income <- prop.table(table(race_without_NA$X_incomg,race_without_NA$rrcognt2))
+my_tab_income
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+
+barplot(my_tab_income,main="Income Levels vs Freq of thinking about race",ylab="Proportion",xlab="Thinking about Race",col=c("lightblue","red","green","darkblue","yellow"),
+ 	legend = rownames(my_tab_income),cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+From the distribution it looks like people who are in the higher income categories think more about race than those in the lower income categories.
+
+Let's break this down further based on individual races -
+
+```{r}
+
+my_inc_cat <- prop.table(table(data_whites$X_incomg,data_whites$rrcognt2))
+my_inc_cat
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_inc_cat ,main="White, Non-Hispanic Income Categories and Freq of thinking about race",ylab="Proportion",xlab="White,Non-Hispanic Thinking about Race",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),	legend = rownames(my_inc_cat),
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+
+```
+
+This shows that whites in the highest level of income category i.e. more than $50k think more about racial status as compared to other categories.
+
+```{r}
+
+my_inc_cat1 <- prop.table(table(data_blacks$X_incomg,data_blacks$rrcognt2))
+my_inc_cat1
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_inc_cat1 ,main="Black, Non-Hispanic Income Categories and Freq of thinking about race",ylab="Proportion",xlab="Black,Non-Hispanic Thinking about Race",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),	legend = rownames(my_inc_cat1),
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+This shows that blacks in the lower income categories think much more about racial status as compared to higher income category i.e. more than $50k.
+
+```{r}
+
+my_inc_cat2 <- prop.table(table(data_asian$X_incomg,data_asian$rrcognt2))
+my_inc_cat2
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_inc_cat2 ,main="Asian, Non-Hispanic Income Categories and Freq of thinking about race",ylab="Proportion",xlab="Asian,Non-Hispanic Thinking about Race",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),	legend = rownames(my_inc_cat2),
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+
+```
+
+This distribution does not give us a clear picture of which income category think more about racial status but on a whole, it can be seen that the higher income category (more than $50k) asians think a lot more about racial status than the lower income categories.
+
+```{r}
+my_inc_cat3 <- prop.table(table(data_alaska_indie$X_incomg,data_alaska_indie$rrcognt2))
+my_inc_cat3
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_inc_cat3 ,main="American Indian/Alaska Native, Non-Hispanic Income Categories and Freq of thinking about race",ylab="Proportion",xlab="American Indian/Alaska Native,Non-Hispanic Thinking about Race",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),	
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+legend("topright", 
+       legend = rownames(my_inc_cat3), 
+       ncol=2,fill = c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+       cex = 0.7)
+```
+
+Clearly, the American Indians/Alaska natives falling in the lower income levels think about racial status much more often than those in higher income category groups.
+
+```{r}
+
+my_inc_cat4 <- prop.table(table(hispanic$X_incomg,hispanic$rrcognt2))
+my_inc_cat4
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_inc_cat4 ,main="Hispanic Income Categories and Freq of thinking about race",ylab="Proportion",xlab="Hispanic Thinking about Race",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),	
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+legend("topright", 
+       legend = rownames(my_inc_cat4), 
+       ncol=2,fill = c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+       cex = 0.7)
+
+```
+
+Clearly, hispanics in the income category of $15k to $25k think the most about racial status than those in other income categories.
+
+```{r}
+
+my_inc_cat5 <- prop.table(table(other$X_incomg,other$rrcognt2))
+my_inc_cat5
+#Let's plot this using a stacked barplot.
+
+labs <- c("Never",  "Once a year", "Once a month","Once a week","Once a day","Once an hour","Constantly")
+barplot(my_inc_cat5 ,main="Other Races, Non-Hispanic Income Categories and Freq of thinking about race",ylab="Proportion",xlab="Other Races, Non-Hispanic Thinking about Race",col=c("lightblue","red","green","darkblue","yellow","orange","turquoise"),	
+ 	cex.main=0.7,cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:7, labels=labs[0:7],cex.axis=0.5)
+legend("topright", 
+       legend = rownames(my_inc_cat5), 
+       ncol=2,fill = c("lightblue","red","green","darkblue","yellow","orange","turquoise"),
+       cex = 0.7)
+
+```
+
+The distribution does not convey a clear trend between income categories and thinking about racial status.
+
+Inference ->
+
+All these distributions clearly leads us to these inferences -
+
+1. Whites in the highest level of income category i.e. more than $50k think more about racial status as compared to whites in other income categories.
+
+2. Blacks in the lower income categories think much more about racial status as compared to higher income category i.e. more than $50k.
+
+3. American Indians/Alaska natives falling in the lower income levels (less than $15k) think about racial status much more often than those in higher income category groups.
+
+Since, these are inferences based on an observational study, hence we cannot say anything about causation & cannot make causal conclusions about income levels and frequnecy of thinking about one's races. To ascertain such inferences, further research is needed which is beyond the scope of this study.
+
+##Research Q3.
+
+
+The focus of this question would be to see if males or females who worked more than the average work hours across various income levels , were they engaging in exercising or not?
+
+Variables used :
+exerany2: Exercise (Physical Activity)
+scntwrk1 - How Many Hours Per Week Do You Work
+X_INCOMG - Computed income categories
+sex - Gender
+ 
+```{r}
+
+#Let's summarise the variables in question
+
+#exerany2: Exercise (Physical Activity)
+#Description: During the past month, other than your regular job, did you participate in any physical activities or exercises such as running, calisthenics, golf, gardening, or walking for exercise? 
+
+load("Brfss.RData")
+
+
+#Let's remove the Na's from the analysis
+brfss2013 <- brfss2013 %>% filter(!is.na(brfss2013$exerany2))
+
+dim(brfss2013)
+
+summary(brfss2013$exerany2)
+
+```
+
+```{r}
+
+exercise <- prop.table(table(brfss2013$exerany2))
+
+barplot(exercise,xlab="Engaged in Exercise",ylab="Count",main="Exercise in past 30 days",col="pink",cex.axis=0.7)
+
+```
+
+This distribution shows that more than 70% of people exercise in one form or the other while only around 30% do not.
+
+```{r}
+
+#scntwrk1 -'How Many Hours Per Week Do You Work'
+#Description: About how many hours do you work per week on all of your jobs and businesses combined? 
+
+#Let's remove the Na's from the analysis
+brfss2013 <- brfss2013 %>% filter(!is.na(brfss2013$scntwrk1))
+dim(brfss2013)
+
+summary(brfss2013$scntwrk1)
+
+```
+
+```{r}
+work_hrs <- prop.table(table(brfss2013$scntwrk1))
+work_hrs
+
+hist(brfss2013$scntwrk1,main="Total Work Hours Per Week",ylab="Count",col="pink")
+
+boxplot(brfss2013$scntwrk1,main="Total Work Hours Per Week",ylab="Count",col="pink")
+
+```
+
+The distribution looks unimodal with median as 40 hrs per week of work hours. Also, it approximately follows normal distribution with mean lying at around 42 hrs which is amost equal to the median. There are a few outliers on both ends as seen in the boxplot.
+
+For income categories, we can refer to the same distribution as in the previous research question for X_incomg, which is as under -
+
+```{r}
+
+#Let's exclude the Na's from the analysis:
+
+brfss2013 <- brfss2013 %>% filter(!is.na(X_incomg)) 
+dim(brfss2013)
+summary(brfss2013$X_incomg)
+
+income <- prop.table(table(brfss2013$X_incomg))
+income
+
+income_cat <- c("Less than $15000"," $15000-$25000","$25000-$35000","$35000-$50000","$50000 or more")
+
+barplot(income,main="Income Categories",ylab="Proportion",col="pink",cex.axis=0.7,xaxt="n")
+axis(side=1, at=1:5, labels=income_cat[0:5],cex.axis=0.7,las=2)
+
+```
+
+Here, we see than more than 40% persons are in the highest income category level of more than 50 thousand dollars.
+
+Now, let's see the distribution of males and females in our data.
+
+```{r}
+#Let's exclude the Na's from the analysis:
+
+brfss2013 <- brfss2013 %>% filter(!is.na(sex)) 
+dim(brfss2013)
+summary(brfss2013$sex)
+
+sex_tab <- prop.table(table(brfss2013$sex))
+sex_tab
+
+barplot(sex_tab,main="Gender distribution",ylab="Proportion",col="pink")
+
+
+```
+Our data has around 55% females and 45% males.
+
+Now, let's see how is if a person exercises associated with number of hours a person works.
+
+```{r}
+
+brfss2013$scntwrk1<-cut(brfss2013$scntwrk1, c(0,20,40,60,80,100))
+
+work_exer <- prop.table(table(brfss2013$exerany2,brfss2013$scntwrk1))
+addmargins(work_exer)
+
+barplot(work_exer,main="Work Hours",ylab="Proportion",xlab="Work Hours",col=c("darkgreen","gold"),cex.axis=0.7,legend = rownames(work_exer))
+
+```
+
+According to this distribution, we see that the number of people who exercise are highest with 82% in the 40-60 hours bucket (around the median hours a person works) while only 67% are in the category where working hours are between 80-10 or 60-80. Hence, we can say that people who work more hours are found to not be engaged in exercising.
+
+Now, let's see how exercise hours by income categories looks like - 
+
+```{r}
+
+incom_exer <- prop.table(table(brfss2013$exerany2,brfss2013$X_incomg))
+addmargins(incom_exer)
+
+barplot(incom_exer,main="Exercise by Income Categories",ylab="Proportion",xlab="Income levels",col=c("darkgreen","gold"),cex.axis=0.7,legend = rownames(incom_exer))
+
+```
+
+According to this distribution, we see that with the rise in income, the number of people who exercise goes up by 20%. (This can be figured out by taking % the "yes" observations against the marginal numbers.)
+
+Now, let's see the distribution between hours of exercise and sex.
+
+```{r}
+
+plot(brfss2013$sex,brfss2013$exerhmm1,xlab="Income Categories",ylab="Gender", main="Hours people exercise by gender",col="lightgreen")
+
+sex_exer <- prop.table(table(brfss2013$exerany2,brfss2013$sex))
+addmargins(sex_exer)
+
+```
+
+Even this distribution shows that irrespective of gender, people exercise usually around 50 hours.
+
+Let's plot a graph between income categories, gender and satisfaction with life to see if earning higher changes outlook of people irrespective of gender or if gender indeed has a role to play in changing the general outlook of life.
+
+```{r}
+
+levels(brfss2013$X_incomg) <- c("15k<","15k-<25k","25k-<35k","35k-<50k",">50k")
+
+library(lattice)
+
+brfss_males <- subset(brfss2013,brfss2013$sex == "Male")
+brfss_females <- subset(brfss2013,brfss2013$sex == "Female")
+brfss_very_satisfied <- subset(brfss2013,brfss2013$lsatisfy == "Very satisfied")
+summary(brfss2013$lsatisfy)
+
+par(mfrow=c(4,2))
+
+histogram(~ brfss_males$lsatisfy| brfss_males$X_incomg, data=brfss_males,layout=c(4,1),    col=c("darkolivegreen"),strip = strip.custom(bg="peachpuff",
+ par.strip.text=list(col="black", cex=.7, font=3)),scales=list(cex=.45, col="black"))
+
+histogram(~ brfss_females$lsatisfy| brfss_females$X_incomg, data=brfss_females,layout=c(4,1),    col=c("darkolivegreen"),strip = strip.custom(bg="peachpuff",
+ par.strip.text=list(col="black", cex=.7, font=3)),scales=list(cex=.45, col="black"))
+
+tab <- xtabs(~ brfss_very_satisfied$lsatisfy+brfss_very_satisfied$X_incomg+brfss_very_satisfied$sex)
+prop.table(tab)
+
+table(brfss2013$X_incomg,brfss2013$sex,brfss2013$lsatisfy)
+
+
+```
+
+Focusing on the first two columns of the plot above, we see that -
+
+1. In the case of being highly satisfied with lives, we see a rise in the satisfaction levels with rise in incomes level to be with females rather than with males.can be associated .
+
+2. In case of just being satisfied, as the income levels rises, so do the satisfaction levels, this can be prominently seen in case of males while for females athough this happens, the difference in satisfaction levels between different income categories in not too wide.
+
+Now, let's focus on the initial question, i.e. to see if people who worked less/more than the average work hours across various income levels , how satisfied with their lives were they?
+
+```{r}
+
+histogram(~lsatisfy | X_incomg  + scntwrk1, data=brfss2013,
+         #type="count", 
+          layout=c(4,2), 
+          col=c("darkolivegreen"),strip = strip.custom(bg="peachpuff",
+ par.strip.text=list(col="black", cex=.7, font=3)),scales=list(cex=.45, col="black"))
+
+```
+
+From this distribution, we can see that -
+
+1. People who work between 0-20 hours and earn more than $50K are 
+
+Inference ->
+

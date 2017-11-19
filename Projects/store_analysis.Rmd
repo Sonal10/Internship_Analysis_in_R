@@ -1,0 +1,92 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+setwd("C:/Users/Sonal Somani/Desktop/IIMInternship/R_code")
+store <- read.csv(paste("Store24.csv", sep=""))
+summary(store)
+```
+
+```{r}
+summary(store$Profit)
+summary(store$MTenure)
+summary(store$CTenure)
+
+```
+
+```{r}
+names(store)
+store_new <- store[order(-store$Profit),] # sort by profit (descending) most profitable
+View(store_new)
+
+store_new[1:10,c("store", "Sales", "Profit", "MTenure", "CTenure")]
+
+store_new1 <- store[order(store$Profit),] # sort by profit (ascending) least profitable
+View(store_new1)
+
+store_new1[1:10,c("store", "Sales", "Profit", "MTenure", "CTenure")]
+
+
+
+```
+
+Scatterplot
+
+```{r}
+
+plot(store$MTenure,store$Profit , main="Scatterplot of Profit vs. MTenure", 
+  	xlab="Mtenure ", ylab="Profit ", pch=19)
+
+abline(lm(store$Profit~store$MTenure), col="green") # regression line (y~x) 
+lines(lowess(store$MTenure,store$Profit), col="red", lty=2) # lowess line (x,y)
+```
+
+
+```{r}
+
+plot(store$CTenure,store$Profit , main="Scatterplot of Profit vs. CTenure", 
+  	xlab="Ctenure ", ylab="Profit ", pch=19)
+
+abline(lm(store$Profit~store$CTenure), col="green") # regression line (y~x) 
+lines(lowess(store$CTenure,store$Profit), col="red", lty=2) # lowess line (x,y)
+```
+
+
+
+```{r}
+cor(store)
+```
+```{r}
+cor(store$Profit,store$MTenure)
+cor(store$Profit,store$CTenure)
+```
+Corrgram
+
+```{r}
+library(corrgram)
+corrgram(store, lower.panel=panel.shade,
+  upper.panel=panel.pie, text.panel=panel.txt,
+  main="Corrgram of store variables")
+
+```
+
+
+Pearson tests
+
+```{r}
+
+cor.test(store$Profit,store$MTenure,type="Pearson")
+cor.test(store$Profit,store$CTenure,type="Pearson")
+
+```
+
+```{r}
+
+model <- lm(data=store,formula = Profit ~ MTenure+ CTenure +Comp+ Pop+ PedCount+ Res+ Hours24+ Visibility)
+
+summary(model)
+```
+

@@ -1,0 +1,74 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Question to Analyse -
+
+What factors explain the difference in price between an economy ticket and a premium-economy airline ticket?
+
+
+```{r}
+#Load packages
+
+library(statsr)
+library(dplyr)
+library(ggplot2)
+
+#set working directory
+
+setwd("C:/Users/Sonal Somani/Desktop/IIMInternship/R_code")
+
+#load dataset into R
+
+airlines <- read.csv(paste("SixAirlines.csv",sep=""))
+
+#View dataset
+View(airlines)
+
+#Check how your data looks like with their datatypes
+str(airlines)
+```
+
+```{r}
+#To get summary statistics of your data, like mean, median, mode for numeric data etc.
+
+summary(airlines)
+
+```
+
+Since Airline column contains nomimal categorical data, we can draw a bar chart to represent its distribution.
+
+```{r}
+#Plotting barchart for the airline frequency distribution
+ggplot(airlines, aes(x = AIRLINE, fill = AIRLINE)) + geom_bar()
+
+```
+
+We see that our dataset contains mostly Britist airlines carrier with count around 175.
+
+Let's check which company makes the most aircrafts according to our data.
+
+```{r}
+ggplot(airlines, aes(x = AIRCRAFT, fill = AIRCRAFT)) + geom_bar()
+```
+Clearly Boeing is taking the lead here.
+
+Let's check how the airlines relates to these aircarfts.
+
+```{r}
+#Distribution showing aircrafts used by the airlines
+table(airlines$AIRLINE, airlines$AIRCRAFT)
+
+```
+
+This shows that we only have data for Boeing and Airbus aircrafts with British and Jet Airlines preferring Boeing Aircrafts.
+
+Since flight duration holds numeric data, let's make a box plot for it and see its distribution.
+
+```{r}
+
+bwplot(Segment ~ income | ownHome, data=seg.df, 
+       horizontal=TRUE, xlab="Income")
+
+```
+

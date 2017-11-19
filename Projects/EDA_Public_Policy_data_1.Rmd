@@ -1,0 +1,156 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+```{r load-packages, message = FALSE}
+## Setup
+setwd("C:/Users/Sonal Somani/Desktop/IIMInternship/R_code")
+
+### Load packages
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+```{r load-data}
+
+load("BRFSS_data.RData")
+
+```
+
+
+
+* * *
+
+## Part 1: Data
+
+Collected on an annual basis, the observations in the BRFSS sample are collected through phone interviews. To get a random sample, Random Digit Dialing techniques are employed on both landlines and cell phone. With 491,775 observations, the dataset covers all 50 states, the district of columbia and three U.S. territories. All in all, a random sampling method was used, the data covers all key geographies in the United States, and the sample size is large enough such that the data is representative of the U.S. population. As such, results from studies conducted using this data can be generalized to the overall U.S. population. However, only observational studies can be conducted with this data, meaning causality cannot be inferred. 
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**
+Are there certain states and territories where a larger percentage of people are unable see the doctor because of medical cost? This question is of importance because it will help the federal government allocate capital efficiently when it is creating a budget for healthcare spending. Higher percentage of people who are unable to meet with a doctor due to costs might be a sign of deeper problems, meaning some states might need more attention and funding than others as a proportion of their population.
+
+**Research quesion 2:**
+
+Do people who get more sleep, tend to be healthier? Some say that 8 hours of sleep is the magic number for good health. However, it is unclear if this is true. Some people believe it and some people don't. Many work-a-holics sacrifice sleep to work more. They could be potentially sacrificing good health.
+
+
+**Research quesion 3:**
+
+Are people who exercise, more likely to eat healthy? Some experts say that physical activity can lead to better eating habits outside of the gym and promote good health. In fact, many gyms claim this as a benefit of joining fitness clubs. This study aims to examin whether or not physical activity builds other good habits such as eating healthier.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+**Research quesion 1:**
+
+```{r}
+## (Varialbe 1 & 2) First, we create 2 new variables- numeric representations of medcost responses. In medcost_yes, if the subjects responded yes, then there will be have a 1, else it is a 0. In medcost_no, if the subject responded no, then we will have a 1 else it is a 0.
+
+brfss2013 <- brfss2013 %>%
+  mutate(medcost_yes = ifelse(medcost == "Yes", 1, 0), medcost_no = ifelse(medcost == "No", 1, 0))
+
+## (Variable 3, 4, & 5) We then sum the number of people who responded yes and no and group these results by state
+
+medcost_by_state <- brfss2013 %>%
+  group_by(X_state) %>%
+  summarise(medcost_yes = sum(medcost_yes, na.rm = TRUE), medcost_no = sum(medcost_no, na.rm = TRUE))
+
+## (Variable 6) After that, we add a column for the proportion of yes responses.
+
+medcost_by_state <- medcost_by_state %>%
+  mutate(medcost_yes_percent = medcost_yes / (medcost_yes + medcost_no))
+
+##Convert the table into a data frame and view the data frame using the view function. To make sure that it is the proper class.
+
+medcost_by_state <- as.data.frame(medcost_by_state)
+View(medcost_by_state)
+
+##Sort the data frame such that the the states and territories with the highest values come first.
+
+sorted_medcost_by_state <- medcost_by_state[order(medcost_by_state$medcost_yes_percent, decreasing =  TRUE),]
+
+##Plot the first six states to see which states have the highest values.
+
+ggplot(data = sorted_medcost_by_state[1:5,], aes(x = reorder(X_state, -medcost_yes_percent), y = medcost_yes_percent)) + geom_col() + geom_text(aes(label=round(medcost_yes_percent, digits = 3), vjust=1.5))
+
+##It looks like Guam is potentially problematic due to its higher than average proportion of people who cannot afford to see a doctor. To be same, check the mean and standard deviation of these proportions across states to make sure that it is unlikely for a state to have such a high values.
+
+medcost_summary <- medcost_by_state %>%
+  summarise(mean = mean(medcost_by_state$medcost_yes_percent, na.rm = TRUE), stdev = sd(medcost_by_state$medcost_yes_percent, na.rm = TRUE))
+medcost_summary
+
+##With these summary statistics, we can calculate Guam's Z-score and find that it is 2.7 standard deviations away from the mean, making it hjighly unlikely that values are that high by chance. With this, we can conclude that Guam is a state that needs more funding and attention as it might have problems disabling people from affording medical care.
+
+Guam_Zscore <- (sorted_medcost_by_state[1,4] - medcost_summary$mean) / medcost_summary$stdev
+Guam_Zscore
+
+```
+
+**Research quesion 2:**
+
+```{r}
+## (Variable 1, 2, 3(grouped average)) First, let us calculate the average amount of sleep people get and group it by health status.
+
+Sleep_byhealth <- brfss2013 %>%
+  group_by(genhlth) %>%
+  summarise(avg_sleep = mean(sleptim1, na.rm = TRUE), digits = 3)
+
+##Convert the table into a data frame and view the data frame using the view function. To make sure that it is the proper class.
+
+Sleep_byhealth <- as.data.frame(Sleep_byhealth)
+View(Sleep_byhealth)
+
+##Plot the data to see if there is a relationship between health and amount of sleep.
+
+ggplot(data = Sleep_byhealth[1:5,], aes(x = genhlth, y = avg_sleep)) + geom_col() + geom_text(aes(label=round(avg_sleep, digits = 3)), vjust=1.5)
+
+##There seems to be a correlation between health status and sleep. The more sleep you have, the healthier you tend to be. However, we need summary statistics to see if these differences are statisticallly significant.
+
+sleep_summary <- brfss2013 %>%
+  summarise(mean = mean(brfss2013$sleptim1, na.rm = TRUE), stdev = sd(brfss2013$sleptim1, na.rm = TRUE))
+sleep_summary
+
+##These summary statistics suggest that the differences in sleep across groups are not significant. While the amount of sleep in the weight classes decrease as the health status decreases, the average sleep amounts all fall within one standard deviation of the mean. There is insufficient evidence to show that sleep is significantly highly related to good health.
+
+
+```
+ 
+
+
+**Research quesion 3:**
+
+```{r}
+## (Variables 1, 2, 3) To start, we will create a new variable to measure total consumption of healthy food. X_frutsum + X_vegesum are dailt totals of fruit and vegetable intake. We add them together to get healthy_eating.
+
+brfss2013 <- brfss2013 %>%
+  mutate(healthy_eating = X_frutsum + X_vegesum)
+
+##Next we create another dataframe for charting. We create another dataframe because we will be removing observations with missing values. It would be wise to not to delete any observations in the original data. We also include total physical activity data in this new data set.
+
+health_df <- cbind.data.frame(healthy_eating = brfss2013$healthy_eating, exercise = brfss2013$pa1min_)
+
+##Remove observations with any missing data
+
+health_df <- health_df[complete.cases(health_df), ]
+
+##Finally, to see if there is a relationship between exercise and healthy_eating, we plot the data to see if there is relationship.
+
+ggplot(data = health_df, aes(x = exercise, y = healthy_eating)) + geom_point()
+
+##Unfortunately, from the scatter plot alone, there is no clear relationship between exercise and healthy_eating. We cannot claim that physical activity encourages healthy eating habits.
+
+
+```

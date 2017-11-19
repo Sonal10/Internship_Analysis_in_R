@@ -1,0 +1,125 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+deans <- read.csv(paste("Data - Deans Dilemma.csv",sep=""))
+View(deans)
+str(deans)
+```
+
+```{r}
+summary(deans$Salary)
+median(deans$Salary)
+```
+
+```{r}
+options(digits=4)
+placed1 <- xtabs(formula=~Placement_B,data=deans)
+placed1
+addmargins(placed1)
+prop.table(placed1)*100
+```
+
+```{r}
+
+placed <- deans %>% filter(deans$Placement_B=='1')
+dim(placed)
+some(placed)
+```
+
+
+```{r}
+summary(placed$Salary)
+```
+
+```{r}
+
+aggregate(placed$Salary, by = list(Gender = placed$Gender), mean)
+
+```
+
+```{r}
+library(lattice)
+
+hist(placed$Percent_MBA,xlim=c(50,80), ylim=c(0,150),breaks=3,col=c('grey'),main="MBA Performance of placed students",xlab="MBA Percentage",ylab="Count")
+
+```
+
+
+```{r}
+notplaced <- deans %>% filter(deans$Placement_B=='0')
+dim(notplaced)
+some(notplaced)
+
+```
+
+
+```{r}
+plot1=hist(placed$Percent_MBA, 
+     xlim=c(50,80), ylim=c(0,150),
+     breaks=3)
+
+
+
+plot2=hist(notplaced$Percent_MBA, 
+     xlim=c(50,80), ylim=c(0,40), 
+     breaks=3
+     )
+
+par(mfrow=c(1, 2))
+with(placed, plot(plot1,cex=0.6,main="MBA Performance of Placed Students",xlab = "MBA Percentage",ylab = "Count",col=c("grey")))
+with(notplaced, plot(plot2,cex=0.6,main="MBA Performance of Not Placed Students",xlab = "MBA Percentage",ylab = "Count",col=c("grey")))
+
+```
+
+```{r}
+par(mfrow=c(1, 2))
+
+with(placed , hist(Percent_MBA, main = "MBA performance of placed students", xlab = "MBA percentage", ylab = "Count", col = "grey", breaks = 3) )
+
+with(notplaced,hist(Percent_MBA, main = "MBA performance of not placed students", xlab = "MBA percentage", ylab = "Count", col = "grey", breaks = 3) )
+```
+
+
+
+```{r}
+
+boxplot(Salary ~ Gender,data=placed,horizontal=TRUE,main="Comparision of Salaries of Males and Females",xlab="Salary",ylab="Gender",names=c("Females","Males"))
+
+
+```
+
+
+```{r}
+placedET <- deans %>% filter(Placement_B=='1' & S.TEST =='1')
+dim(placedET)
+some(placedET)
+
+
+```
+
+```{r}
+library(car)
+scatterplotMatrix(formula = ~ Salary + Percent_MBA + Percentile_ET, cex=0.6,
+                       data=placedET, diagonal="density",main="Scatter Plot Matrix")
+
+
+```
+
+
+### Determining if there is a gender gap in the ay between males and females
+
+```{r}
+aggregate(placed$Salary,by=list(placed$Gender),FUN=var)
+
+boxplot(placed$Salary ~ placed$Gender)
+summary(placed$Salary)
+t.test(placed$Salary ~ placed$Gender,alternative="less")
+f <- placed %>% filter(placed$Gender == 'F')
+m <- placed %>% filter(placed$Gender == 'M')
+
+
+```
+

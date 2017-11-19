@@ -1,0 +1,100 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(statsr)
+```
+
+
+```{r}
+setwd="C:\Users\Sonal Somani\Desktop\IIMInternship\R_code"
+titanic <- read.csv(paste("Titanic Data.csv",sep=""))
+View(titanic)
+head(titanic)
+dim(titanic)
+
+```
+```{r}
+count(titanic)
+```
+
+```{r}
+
+table(titanic$Survived)
+
+
+```
+
+```{r}
+survived_table <- table(titanic$Survived)
+survived_table
+prop.table(survived_table)*100
+```
+
+```{r}
+
+xtabs(formula = ~ Survived + Pclass,data= titanic)
+
+```
+```{r}
+
+class_survived <- xtabs(formula = ~ Survived + Pclass,data= titanic)
+class_survived
+prop.table(class_survived,2)*100
+
+```
+
+```{r}
+
+female_class_survived <- xtabs(formula = ~ Survived + Pclass + Sex ,data= titanic)
+ftable(female_class_survived)
+
+
+```
+
+ Percentage of survivors who were female = 68%
+
+```{r}
+
+survivors_titanic <- table(titanic$Sex,titanic$Survived)
+survivors_titanic
+addmargins(survivors_titanic)
+prop.table(survivors_titanic,2)*100
+
+```
+
+Measure the percentage of females on board the Titanic who survived = 74%
+
+```{r}
+survivors_titanic <- table(titanic$Survived,titanic$Sex)
+survivors_titanic
+addmargins(survivors_titanic)
+prop.table(survivors_titanic,2)*100
+
+```
+
+Run a Pearson's Chi-squared test to test the following hypothesis:
+ 
+Hypothesis:  The proportion of females onboard who survived the sinking of the Titanic was higher than the proportion of males onboard who survived the sinking of the Titanic.
+
+```{r}
+
+chi_sq_table <- xtabs(formula = ~ titanic$Survived + titanic$Sex)
+chi_sq_table
+
+chisq.test(chi_sq_table)
+```
+
+```{r}
+
+aggregate(titanic$Age, by=list(titanic$Survived), mean)
+boxplot(titanic$Age ~ titanic$Survived)
+t.test(titanic$Age ~ titanic$Survived,alternative="greater")
+
+
+```
+
