@@ -1,12 +1,13 @@
 # Read this first.
 
 What is this repository about?
-There are several R workbooks as part of this folder. These are some pieces of short analysis that I worked as part of the IIM-L internship which I did back in 2017. As part of the internship, several HBR case studies were analysed. Unfortunaltely, the data files are not here, but there are several documents which would explain the cases and then you would find the codes too.
+There are several R workbooks as part of this folder. These are some pieces of short analysis that I worked as part of the IIM-L internship which I did back in 2017. As part of the internship, several HBR case studies were analysed. Unfortunaltely, the complete data files are not here, but there are several documents which would explain the cases and then you would find the codes too.
 
 For running the code, you may follow the below steps:
 1. Run VSCode (or any other code editor) from Anaconda Command Prompt
 2. Make sure you are using a dedicated virtual environment and activate it
-Sample 
+Sample - 
+ 
 '''code
 conda create -n myenv python=3.7.3
 '''
