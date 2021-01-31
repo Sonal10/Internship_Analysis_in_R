@@ -5,15 +5,18 @@ There are several R workbooks as part of this folder. These are some pieces of s
 
 For running the code, you may follow the below steps:
 1. Run VSCode (or any other code editor) from Anaconda Command Prompt
-2. Make sure you are using a dedicated virtual environment and activate it
-Sample - 
+2. Make sure you are using a dedicated virtual environment and activate it,
+sample - 
  
 '''code
 conda create -n myenv python=3.7.3
 '''
+
 3. Install or upgrade all packages from requirements.txt
+
 conda install --file requirements.txt
 or pip install -r requirements.txt
+
 You may need to add the full path of requirements.txt file depending on your pwd
 
 Important links:
