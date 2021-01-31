@@ -1,0 +1,12 @@
+envs
+.vscode
+data
+outputs
+inputs
+.pyc
+.csv
+__pycache__
+.ipynb_checkpoints
+data/cleaned
+.json
+.vscode/settings.json
